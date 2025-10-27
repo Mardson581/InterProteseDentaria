@@ -1,7 +1,7 @@
 /* 
     -- Código SQL do trabalho interdisciplinar do Grupo MKMG --
     Este arquivo e o diagrama DER estão disponíveis no repositório do Github
-    https://github.com/Mardson581/InterProtese
+    https://github.com/Mardson581/InterProteseDentaria
 
     Se possível, documente todo o código que for alterado ou adicionado para facilitar a
     manutenção :-)
@@ -99,8 +99,22 @@ create table Entregadores (
     constraint check_comissao check(comissao >= 0)
 );
 
+-- Como a tabelas Entregas manda a chave para Pedidos, ela deve ser criada antes de Pedidos
+-- Corrigindo: A tabela Entregas deve referenciar um Pedido. Um Pedido pode ter uma Entrega.
+create table Entregas (
+    id                  int not null identity,
+    id_pedido           int not null,
+    codigo_entregador   int not null,
+    data_hora_entrega   datetime not null default getdate(),
+
+    constraint pk_id primary key(id),
+    constraint fk_id_pedido foreign key(id_pedido) references Pedidos,
+    constraint fk_codigo_entregador foreign key(codigo_entregador) references Entregadores
+);
+
 -- Tanto um Dentista quanto um Protético interagem com n Pedidos
--- Um Pedido tem vários Serviços e um Serviço tem vários Pedidos
+-- Vários Pedidos podem ser entregues por um Entregador, mas não é obrigatório
+-- O código do Entregador é responsabilidade da tabela Entregas
 create table Pedidos (
     id                  int not null identity,
     valor_total         decimal(6,2) not null,
@@ -111,11 +125,26 @@ create table Pedidos (
     constraint fk_codigo_dentista foreign key(codigo_dentista) references Dentistas,
     constraint fk_codigo_protetico foreign key(codigo_protetico) references Proteticos,
     
+    -- O valor total não pode ser negativo
     constraint check_total check(valor_total)
 );
 
+-- Pedidos podem ter ou não Parcelas
+create table Parcelas (
+    codigo      int not null identity,
+    id_pedido   int not null,
+    valor       decimal(6,2) not null,
+    
+    constraint pk_codigo primary key(codigo),
+    constraint fk_id_pedido foreign key(id_pedido) references Pedidos,
+
+    constraint check_valor check(valor > 0)
+);
+
+-- Os serviços disponíveis para encomenda são guardados nesta tabela
+-- Um Pedido tem vários Serviços e um Serviço tem vários Pedidos
 create table Servicos (
-    codigo      int not null,
+    codigo      int not null identity,
     nome        varchar(50) not null,
     descricao   varchar(150) not null,
     valor       decimal(6,2) not null,
@@ -127,4 +156,19 @@ create table Servicos (
 );
 
 -- Esta tabela é usada para fazer o N-N entre Pedidos e Serviços
-create table Itens_Pedidos ();
+-- As chaves estrangeiras devem ser primárias também, assim forma-se o N-N
+-- Aqui usa-se chave primária composta (duas primary keys)
+create table Itens_Pedidos (
+    id_pedido       int not null,
+    codigo_servico  int not null,
+    quantidade      int not null,
+
+    constraint pk_id_pedido primary key(id_pedido),
+    constraint pk_codigo_servico primary key(codigo_servico),
+    
+    constraint fk_id_pedido foreign key(id_pedido) references Pedidos,
+    constraint fk_codigo_servico foreign key(codigo_servico) references Servicos,
+
+    constraint check_quantidade check(quantidade > 0)
+);
+go
