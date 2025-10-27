@@ -9,6 +9,12 @@
     Não vale usar ChatGPT aqui >:-(
 */
 
+create database InterProtetico; -- É um bom nome? Talvez fosse bom trocar?
+go
+
+use InterProtetico;
+go
+
 -- Pessoas é a tabela pai de Dentistas, Protéticos e Entregadores
 -- As tabelas filhas herdarão desta tabela através da coluna 'codigo'
 create table Pessoas (
@@ -94,7 +100,31 @@ create table Entregadores (
 );
 
 -- Tanto um Dentista quanto um Protético interagem com n Pedidos
+-- Um Pedido tem vários Serviços e um Serviço tem vários Pedidos
 create table Pedidos (
-    id          int not null identity,
+    id                  int not null identity,
+    valor_total         decimal(6,2) not null,
+    codigo_dentista     int not null,
+    codigo_protetico    int not null,
 
+    constraint pk_id primary key(id),
+    constraint fk_codigo_dentista foreign key(codigo_dentista) references Dentistas,
+    constraint fk_codigo_protetico foreign key(codigo_protetico) references Proteticos,
+    
+    constraint check_total check(valor_total)
 );
+
+create table Servicos (
+    codigo      int not null,
+    nome        varchar(50) not null,
+    descricao   varchar(150) not null,
+    valor       decimal(6,2) not null,
+
+    constraint pk_codigo primary key(codigo),
+    constraint unique_nome unique(nome),
+    
+    constraint check_valor check(valor >= 0)
+);
+
+-- Esta tabela é usada para fazer o N-N entre Pedidos e Serviços
+create table Itens_Pedidos ();
